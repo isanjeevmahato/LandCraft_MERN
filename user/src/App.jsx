@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import LandMap from "./components/LandMap";
+
 import "./App.css";
 
 function App() {
   const [showRegister, setShowRegister] = useState(false);
-  const [serverStatus, setServerStatus] = useState("Checking server...");
 
   const [loggedInUser, setLoggedInUser] = useState(() => {
     try {
@@ -12,17 +13,7 @@ function App() {
       return null;
     }
   });
-
-  useEffect(() => {
-    fetch("http://localhost:5000/")
-      .then((response) => response.json())
-      .then((data) => {
-        setServerStatus(data.message);
-      })
-      .catch(() => {
-        setServerStatus("Backend connection failed");
-      });
-  }, []);
+  
 
   const handleRegister = async (event) => {
     event.preventDefault();
@@ -126,8 +117,15 @@ function App() {
     return (
       <div className="dashboard-page">
 
+        {/* Header */}
         <header className="dashboard-header">
-          <h1>LandCraft</h1>
+          <div className="dashboard-brand">
+            <div className="brand-logo">LC</div>
+            <div>
+              <h1>LandCraft</h1>
+              <span>Land Verification & Survey Platform</span>
+            </div>
+          </div>
 
           <button
             className="logout-btn"
@@ -143,39 +141,121 @@ function App() {
 
         <main className="dashboard-content">
 
-          <div className="dashboard-welcome">
-            <h2>Welcome, {loggedInUser.name} 👋</h2>
-            <p>
-              Manage your land requests and verification status
-              from your dashboard.
-            </p>
-          </div>
+          {/* Welcome section */}
+          <section className="dashboard-hero">
+            <div>
+              <span className="dashboard-kicker">
+                LANDCRAFT DASHBOARD
+              </span>
 
-          <div className="dashboard-cards">
+              <h2>
+                Digital Land Verification
+                <br />
+                <span>& Survey Management</span>
+              </h2>
 
-            <div className="dashboard-card">
-              <h3>My Land</h3>
-              <p>View your registered land parcels.</p>
+              <p>
+                Connect recorded land information with mapped
+                boundaries and land verification requests.
+              </p>
+
+              <a href="#land-map" className="dashboard-map-link">
+                View Parcel Map
+              </a>
             </div>
 
-            <div className="dashboard-card">
-              <h3>My Requests</h3>
-              <p>Track your submitted land requests.</p>
+            <div className="dashboard-system-status">
+              <span />
+              System Ready
+            </div>
+          </section>
+
+          {/* Four summary blocks */}
+          <section className="dashboard-overview">
+
+            <div className="dashboard-section-heading">
+              <div>
+                <span className="dashboard-kicker">
+                  OVERVIEW
+                </span>
+                <h3>Land Survey Summary</h3>
+              </div>
+
+              <span className="demo-badge">Demo Data</span>
             </div>
 
-            <div className="dashboard-card">
-              <h3>Notifications</h3>
-              <p>View updates from LandCraft.</p>
+            <div className="dashboard-stat-grid">
+
+              <div className="dashboard-stat-card">
+                <div className="dashboard-stat-icon parcels-icon">
+                  ⬡
+                </div>
+                <div>
+                  <span>Total Parcels</span>
+                  <strong>12</strong>
+                </div>
+              </div>
+
+              <div className="dashboard-stat-card">
+                <div className="dashboard-stat-icon completed-icon">
+                  ⚑
+                </div>
+                <div>
+                  <span>Surveys Completed</span>
+                  <strong>7</strong>
+                </div>
+              </div>
+
+              <div className="dashboard-stat-card">
+                <div className="dashboard-stat-icon pending-icon">
+                  ⚑
+                </div>
+                <div>
+                  <span>Pending Surveys</span>
+                  <strong>5</strong>
+                </div>
+              </div>
+
+              <div className="dashboard-stat-card">
+                <div className="dashboard-stat-icon discrepancy-icon">
+                  !
+                </div>
+                <div>
+                  <span>Discrepancies</span>
+                  <strong>2</strong>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Interactive map */}
+          <section className="dashboard-map-section" id="land-map">
+
+            <div className="dashboard-section-heading">
+              <div>
+                <span className="dashboard-kicker">
+                  PARCEL MAP
+                </span>
+                <h3>Interactive Land Map</h3>
+              </div>
             </div>
 
-            <div className="dashboard-card">
-              <h3>Reports</h3>
-              <p>View your verification reports.</p>
-            </div>
+            <LandMap />
 
-          </div>
+          </section>
 
         </main>
+
+        {/* Footer */}
+        <footer className="dashboard-footer">
+          <div>
+            <strong>LANDCRAFT</strong>
+            <span>Digital Land Verification Platform</span>
+          </div>
+
+          <span>Prototype • V1.0</span>
+        </footer>
 
       </div>
     );
@@ -189,9 +269,6 @@ function App() {
           <div className="logo">
             <h1>LandCraft</h1>
             <p>Land Verification & Dispute Support</p>
-            <p className="server-status">
-              {serverStatus}
-            </p>
           </div>
 
           <h2>Create Account</h2>
@@ -276,9 +353,6 @@ function App() {
         <div className="logo">
           <h1>LandCraft</h1>
           <p>Land Verification & Dispute Support</p>
-          <p className="server-status">
-            {serverStatus}
-          </p>
         </div>
 
         <h2>Login</h2>

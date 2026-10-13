@@ -1,0 +1,93 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "plotId": "LC-001",
+        "owner": "Ramesh Kumar",
+        "recordedArea": "0.85 Acre",
+        "surveyStatus": "Verified",
+        "claim": "Part A"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.1840, 23.7050],
+            [86.1860, 23.7050],
+            [86.1860, 23.7035],
+            [86.1840, 23.7035],
+            [86.1840, 23.7050]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotId": "LC-002",
+        "owner": "Suresh Prasad",
+        "recordedArea": "1.12 Acre",
+        "surveyStatus": "Pending",
+        "claim": "Part B"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.1862, 23.7050],
+            [86.1882, 23.7050],
+            [86.1882, 23.7035],
+            [86.1862, 23.7035],
+            [86.1862, 23.7050]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotId": "LC-003",
+        "owner": "Anita Devi",
+        "recordedArea": "0.72 Acre",
+        "surveyStatus": "Discrepancy",
+        "claim": "Part A"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.1840, 23.7033],
+            [86.1860, 23.7033],
+            [86.1860, 23.7018],
+            [86.1840, 23.7018],
+            [86.1840, 23.7033]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "plotId": "LC-004",
+        "owner": "Mohan Singh",
+        "recordedArea": "0.96 Acre",
+        "surveyStatus": "Pending",
+        "claim": "Part B"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.1862, 23.7033],
+            [86.1882, 23.7033],
+            [86.1882, 23.7018],
+            [86.1862, 23.7018],
+            [86.1862, 23.7033]
+          ]
+        ]
+      }
+    }
+  ]
+}

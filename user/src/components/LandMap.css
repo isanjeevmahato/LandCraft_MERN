@@ -1,0 +1,153 @@
+.landcraft-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  overflow: hidden;
+  background: #dfe7e2;
+  border: 1px solid #dce3df;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(20, 40, 35, 0.05);
+}
+
+.landcraft-map-canvas {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Transparent wrapper: only the flag should be visible. */
+.landcraft-map-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.lc-flag {
+  display: block;
+  width: 30px;
+  height: 34px;
+  background: transparent;
+  border: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+.lc-flag svg {
+  display: block;
+  width: 30px;
+  height: 34px;
+}
+
+/* Map controls */
+.landcraft-map-controls {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 800;
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 5px 18px rgba(20, 40, 35, 0.12);
+}
+
+.landcraft-map-controls button {
+  border: none;
+  padding: 8px 12px;
+  color: #66717d;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.landcraft-map-controls button.active {
+  background: #173f35;
+  color: #ffffff;
+}
+
+/* Legend */
+.landcraft-map-legend {
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+  z-index: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 195px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e2e6e9;
+  border-radius: 9px;
+  box-shadow: 0 6px 18px rgba(20, 40, 35, 0.12);
+  color: #5f6965;
+  font-size: 11px;
+}
+
+.landcraft-map-legend > strong {
+  color: #26332f;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.landcraft-map-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lc-legend-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.lc-legend-dot.completed {
+  background: #168348;
+}
+
+.lc-legend-dot.pending {
+  background: #eab308;
+}
+
+.lc-legend-dot.discrepancy {
+  background: #dc2626;
+}
+
+/* Popup */
+.landcraft-map-canvas .leaflet-popup-content {
+  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+}
+
+.landcraft-map-canvas .leaflet-popup-content p {
+  margin: 6px 0 0;
+}
+
+/* Responsive layout */
+@media (max-width: 700px) {
+  .landcraft-map-wrapper {
+    height: 400px;
+  }
+
+  .landcraft-map-controls {
+    top: 10px;
+    right: 10px;
+  }
+
+  .landcraft-map-legend {
+    left: 10px;
+    bottom: 10px;
+    min-width: 175px;
+    padding: 10px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .landcraft-map-wrapper {
+    height: 350px;
+  }
+}
