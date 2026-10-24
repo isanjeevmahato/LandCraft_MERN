@@ -1,0 +1,146 @@
+.my-requests-section {
+  margin-top: 30px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #e5e9ef;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(20, 40, 35, 0.04);
+}
+
+.my-requests-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.my-requests-heading h2 {
+  margin: 3px 0 7px;
+  color: #172033;
+  font-size: 23px;
+}
+
+.my-requests-heading p,
+.my-requests-empty p {
+  color: #74808a;
+  font-size: 13px;
+}
+
+.my-requests-count {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background: #edf4f1;
+  color: #285c4d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.my-request-card {
+  padding: 20px;
+  border: 1px solid #e5e9ed;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.my-request-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.my-request-id {
+  color: #285c4d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.my-request-card h3 {
+  margin: 5px 0 9px;
+  color: #172033;
+  font-size: 16px;
+}
+
+.my-request-card p {
+  margin-top: 5px;
+  color: #74808a;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.my-request-status {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border-radius: 20px;
+  background: #fff4d8;
+  color: #946c00;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.my-request-status.status-report-ready {
+  background: #e4f6ea;
+  color: #168348;
+}
+
+.my-request-status.status-rejected {
+  background: #fff0ed;
+  color: #b42318;
+}
+
+.my-request-meta {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f2;
+  color: #89929d;
+  font-size: 11px;
+}
+
+.my-requests-empty {
+  padding: 35px 20px;
+  text-align: center;
+  background: #f8faf9;
+  border: 1px dashed #dce3df;
+  border-radius: 10px;
+}
+
+.my-requests-empty h3 {
+  margin-bottom: 7px;
+  color: #173f35;
+  font-size: 16px;
+}
+
+.my-requests-error {
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff0ed;
+  color: #b42318;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .my-requests-section {
+    padding: 20px 16px;
+  }
+
+  .my-requests-heading {
+    align-items: flex-start;
+  }
+
+  .my-requests-heading h2 {
+    font-size: 20px;
+  }
+
+  .my-request-main {
+    flex-direction: column;
+  }
+}
