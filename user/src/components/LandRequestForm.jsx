@@ -84,7 +84,7 @@ function LandRequestForm({ onClose }) {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/requests",
+        `${import.meta.env.VITE_API_URL || ""}/api/requests`,
         {
           method: "POST",
           headers: {

@@ -43,7 +43,11 @@ mongoose
   });
 
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`LandCraft server running on http://localhost:${PORT}`);
-});
+// Start server locally; Vercel uses the exported Express app
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`LandCraft server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
