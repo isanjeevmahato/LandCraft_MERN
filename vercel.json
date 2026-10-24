@@ -1,0 +1,43 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "admin": {
+      "root": "admin",
+      "framework": "vite"
+    },
+    "server": {
+      "root": "server",
+      "framework": "express"
+    },
+    "user": {
+      "root": "user",
+      "framework": "vite"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "server"
+      }
+    },
+    {
+      "source": "/admin",
+      "destination": {
+        "service": "admin"
+      }
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": {
+        "service": "admin"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "user"
+      }
+    }
+  ]
+}

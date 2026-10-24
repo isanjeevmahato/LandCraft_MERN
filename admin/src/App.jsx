@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import SurveyMap from "./SurveyMap";
 
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || "";
 
 function App() {
   const [identifier, setIdentifier] = useState("");
