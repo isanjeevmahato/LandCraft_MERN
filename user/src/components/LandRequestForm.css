@@ -1,0 +1,272 @@
+.land-request-section {
+  margin-top: 30px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #e5e9ef;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(20, 40, 35, 0.04);
+}
+
+.land-request-heading,
+.request-parties-heading,
+.request-party-title,
+.request-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.land-request-heading {
+  align-items: flex-start;
+  margin-bottom: 25px;
+}
+
+.land-request-heading h2 {
+  margin: 4px 0 8px;
+  color: #172033;
+  font-size: 23px;
+}
+
+.land-request-heading p,
+.request-parties-heading p {
+  color: #74808a;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.request-close-btn,
+.request-cancel-btn,
+.request-add-party-btn,
+.request-remove-party-btn,
+.request-submit-btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+
+.request-close-btn,
+.request-cancel-btn {
+  padding: 10px 15px;
+  background: #fff;
+  border: 1px solid #dce2e5;
+  color: #44534c;
+}
+
+.request-add-party-btn {
+  flex-shrink: 0;
+  padding: 10px 13px;
+  color: #173f35;
+  background: #edf4f1;
+  border: 1px solid #dce7e2;
+}
+
+.request-submit-btn {
+  padding: 12px 20px;
+  border: 1px solid #173f35;
+  background: #173f35;
+  color: #fff;
+}
+
+.request-submit-btn:hover {
+  background: #245b4d;
+}
+
+.request-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.request-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.request-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 17px;
+}
+
+.request-field label {
+  color: #4e5b65;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.request-field input,
+.request-field select,
+.request-field textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #dce2e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #26332f;
+  font: inherit;
+  font-size: 13px;
+}
+
+.request-field input,
+.request-field select {
+  min-height: 44px;
+}
+
+.request-field textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.request-field input:focus,
+.request-field select:focus,
+.request-field textarea:focus {
+  outline: none;
+  border-color: #477b6b;
+  box-shadow: 0 0 0 3px rgba(71, 123, 107, 0.08);
+}
+
+.request-parties-heading {
+  align-items: flex-start;
+  margin: 12px 0 18px;
+}
+
+.request-parties-heading h3 {
+  margin-bottom: 4px;
+  color: #173f35;
+  font-size: 17px;
+}
+
+.request-party-card {
+  margin-bottom: 16px;
+  padding: 20px;
+  border: 1px solid #e3e9e6;
+  border-radius: 11px;
+  background: #fbfcfb;
+}
+
+.request-party-title {
+  margin-bottom: 16px;
+}
+
+.request-party-title h4 {
+  color: #173f35;
+  font-size: 14px;
+}
+
+.request-remove-party-btn {
+  border: 0;
+  padding: 6px 9px;
+  color: #b42318;
+  background: #fff0ed;
+}
+
+.request-error {
+  margin: 12px 0;
+  padding: 11px 13px;
+  border: 1px solid #f2c8c4;
+  border-radius: 8px;
+  background: #fff0ed;
+  color: #b42318;
+  font-size: 12px;
+}
+
+.request-form-actions {
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
+.land-request-success {
+  max-width: 580px;
+  margin: 10px auto;
+  text-align: center;
+}
+
+.request-success-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #168348;
+  background: #e4f6ea;
+  border-radius: 50%;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.land-request-success h2 {
+  margin-bottom: 8px;
+  color: #173f35;
+  font-size: 23px;
+}
+
+.land-request-success > p {
+  color: #74808a;
+  font-size: 13px;
+}
+
+.request-success-details {
+  margin: 24px 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  text-align: left;
+  background: #f5f8f6;
+  border: 1px solid #e3e9e6;
+  border-radius: 10px;
+}
+
+.request-success-details span {
+  color: #74808a;
+  font-size: 12px;
+}
+
+.request-success-details strong {
+  color: #173f35;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.land-request-success .request-demo-note {
+  margin-bottom: 22px;
+  font-size: 12px;
+}
+
+@media (max-width: 650px) {
+  .land-request-section {
+    padding: 20px 16px;
+  }
+
+  .land-request-heading h2 {
+    font-size: 20px;
+  }
+
+  .request-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .request-parties-heading {
+    flex-direction: column;
+  }
+
+  .request-party-card {
+    padding: 15px;
+  }
+
+  .request-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .request-form-actions button {
+    width: 100%;
+  }
+}

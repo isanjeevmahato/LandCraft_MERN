@@ -1,0 +1,48 @@
+
+:root {
+  font-family: Inter, Arial, sans-serif;
+  color: #172033;
+  background: #f3f6f8;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  max-width: none;
+  padding: 0;
+  text-align: left;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+input {
+  color: #172033;
+  background: #ffffff;
+}
+
+button {
+  cursor: pointer;
+}

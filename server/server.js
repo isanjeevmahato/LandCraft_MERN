@@ -4,6 +4,10 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
+const landRequestRoutes = require("./routes/landRequestRoutes");
+const adminRequestRoutes = require("./routes/adminRequestRoutes");
+const gpsRoutes = require("./routes/gpsRoutes");
+const referenceMapRoutes = require("./routes/referenceMapRoutes");
 
 const app = express();
 
@@ -14,7 +18,10 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
-
+app.use("/api/requests", landRequestRoutes);
+app.use("/api/admin/requests", adminRequestRoutes);
+app.use("/api/gps", gpsRoutes);
+app.use("/api/reference-maps", referenceMapRoutes);
 
 // Test route
 app.get("/", (req, res) => {
