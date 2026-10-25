@@ -1477,8 +1477,8 @@ body {
 
 .public-logo-image {
     display: block;
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     flex: 0 0 52px;
     object-fit: contain;
     border-radius: 14px;
