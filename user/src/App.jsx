@@ -359,7 +359,13 @@ function App() {
         {/* Header */}
         <header className="dashboard-header">
           <div className="dashboard-brand">
-            <div className="brand-logo">LC</div>
+
+            <img
+              src="/download.svg"
+              alt="LandCraft"
+              className="public-logo-image"
+            />
+
             <div>
               <h1>LandCraft</h1>
               <span>Land Verification & Survey Platform</span>
