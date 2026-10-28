@@ -17,6 +17,19 @@ function App() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsPaused, setGpsPaused] = useState(false);
   const [surveyPoints, setSurveyPoints] = useState([]);
+  const [surveyParties, setSurveyParties] = useState([
+    {
+      id: 1,
+      name: "Party 1",
+      color: "#2563eb",
+      points: [],
+      completed: false,
+    },
+  ]);
+  const [activePartyId, setActivePartyId] = useState(1);
+  const activeParty =
+    surveyParties.find((party) => party.id === activePartyId) ||
+    surveyParties[0];
   const [activePage, setActivePage] = useState("requests");
   const [error, setError] = useState("");
   const [showSetupForm, setShowSetupForm] = useState(false);
@@ -103,7 +116,7 @@ function App() {
       setGpsLoading(false);
     }
   }
-
+  
 
   function saveSurveyPoint() {
     if (!gpsLocation) {
@@ -112,35 +125,59 @@ function App() {
     }
 
     const newPoint = {
-      id: surveyPoints.length + 1,
-      latitude: gpsLocation.latitude,
-      longitude: gpsLocation.longitude,
+      id: 1,
+      latitude: Number(gpsLocation.latitude),
+      longitude: Number(gpsLocation.longitude),
       satellites: gpsLocation.satellites ?? null,
       savedAt: new Date().toISOString(),
     };
 
-    setSurveyPoints((previousPoints) => [
-      ...previousPoints,
-      newPoint,
-    ]);
+    setSurveyParties((previousParties) =>
+      previousParties.map((party) => {
+        if (party.id !== activePartyId) return party;
 
-    // Pause automatic GPS refresh after saving a point.
+        return {
+          ...party,
+          points: [
+            ...party.points,
+            {
+              ...newPoint,
+              id: party.points.length + 1,
+            },
+          ],
+        };
+      })
+    );
+
     setGpsPaused(true);
     setGpsError("");
   }
 
 
+
   function clearSurveyPoints() {
+    if (!activeParty || activeParty.points.length === 0) {
+      return;
+    }
+
     const confirmed = window.confirm(
-      "Are you sure you want to delete all saved survey points? This cannot be undone."
+      `Are you sure you want to delete all saved points for ${activeParty.name}? This cannot be undone.`
     );
 
     if (!confirmed) return;
 
-    setSurveyPoints([]);
+    setSurveyParties((previousParties) =>
+      previousParties.map((party) =>
+        party.id === activePartyId
+          ? { ...party, points: [], completed: false }
+          : party
+      )
+    );
+
     setGpsPaused(false);
     setGpsError("");
   }
+
 
   useEffect(() => {
     if (activePage !== "survey" || gpsPaused) {
@@ -1116,6 +1153,7 @@ function App() {
                 >
                   {gpsLoading ? "Fetching..." : "Refresh GPS"}
                 </button>
+
               </div>
 
               {gpsError && (
@@ -1153,13 +1191,101 @@ function App() {
                 </div>
               )}
 
+
+              <div className="survey-parties-panel">
+                <div className="inbox-heading">
+                  <div>
+                    <h2>Survey Parties</h2>
+                    <p className="muted">
+                      Select a party before saving rover GPS points.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => {
+                      const nextId =
+                        Math.max(0, ...surveyParties.map((party) => party.id)) + 1;
+
+                      const colors = [
+                        "#2563eb",
+                        "#eab308",
+                        "#16a34a",
+                        "#9333ea",
+                        "#ea580c",
+                        "#0891b2",
+                      ];
+
+                      setSurveyParties((previous) => [
+                        ...previous,
+                        {
+                          id: nextId,
+                          name: `Party ${nextId}`,
+                          color: colors[(nextId - 1) % colors.length],
+                          points: [],
+                          completed: false,
+                        },
+                      ]);
+
+                      setActivePartyId(nextId);
+                      setGpsPaused(false);
+                      setGpsError("");
+                      fetchLatestGPS();
+                    }}
+                  >
+                    + Add Party
+                  </button>
+                </div>
+
+                <div className="survey-party-list">
+                  {surveyParties.map((party) => (
+
+                    <button
+                      type="button"
+                      key={party.id}
+                      className={
+                        activePartyId === party.id
+                          ? "survey-party-button active"
+                          : "survey-party-button"
+                      }
+                      onClick={() => {
+                        setActivePartyId(party.id);
+                        setGpsPaused(false);
+                        setGpsError("");
+                        fetchLatestGPS();
+                      }}
+                    >
+                      <span
+                        className="survey-party-color"
+                        style={{ backgroundColor: party.color }}
+                      />
+
+                      <span className="survey-party-details">
+                        <strong>{party.name}</strong>
+                        <small>
+                          {party.points.length} saved point
+                          {party.points.length === 1 ? "" : "s"}
+                        </small>
+                      </span>
+
+                      <span className="survey-party-next">
+                        Next: P{party.points.length + 1}
+                      </span>
+                    </button>
+
+                  ))}
+                </div>
+              </div>
+
+
               <div className="survey-point-actions">
                 <button
                   type="button"
                   onClick={saveSurveyPoint}
                   disabled={!gpsLocation || gpsPaused}
                 >
-                  Save P{surveyPoints.length + 1}
+                  Save {activeParty.name} P{activeParty.points.length + 1}
                 </button>
 
                 <button
@@ -1176,18 +1302,18 @@ function App() {
                 <button
                   type="button"
                   onClick={clearSurveyPoints}
-                  disabled={surveyPoints.length === 0}
+                  disabled={activeParty.points.length === 0}
                 >
                   Clear Points
                 </button>
 
               </div>
 
-              {surveyPoints.length > 0 && (
+              {activeParty.points.length > 0 && (
                 <div className="saved-points">
-                  <h2>Saved Survey Points</h2>
+                  <h2>Saved Survey Points — {activeParty.name}</h2>
 
-                  {surveyPoints.map((point) => (
+                  {activeParty.points.map((point) => (
                     <div className="saved-point" key={point.id}>
                       <strong>P{point.id}</strong>
                       <span>Latitude: {point.latitude}</span>
@@ -1197,7 +1323,10 @@ function App() {
                 </div>
               )}
 
-              <SurveyMap points={surveyPoints} />
+              <SurveyMap
+                points={activeParty.points}
+                parties={surveyParties}
+              />
 
             </section>
           )}

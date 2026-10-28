@@ -31,7 +31,201 @@ function calculatePolygonArea(points) {
 }
 
 
-function SurveyMap({ points = [] }) {
+function getValidPartyPoints(points = []) {
+    const valid = points.filter((point) => {
+        const lat = Number(point.latitude);
+        const lng = Number(point.longitude);
+
+        return (
+            point.latitude !== null &&
+            point.latitude !== "" &&
+            point.longitude !== null &&
+            point.longitude !== "" &&
+            Number.isFinite(lat) &&
+            Number.isFinite(lng) &&
+            lat >= -90 && lat <= 90 &&
+            lng >= -180 && lng <= 180
+        );
+    });
+
+    // Remove consecutive duplicate GPS positions.
+    return valid.filter((point, index, list) => {
+        if (index === 0) return true;
+
+        return (
+            Number(point.latitude) !== Number(list[index - 1].latitude) ||
+            Number(point.longitude) !== Number(list[index - 1].longitude)
+        );
+    });
+}
+
+function toLocalPolygon(points, originLat, originLng) {
+    const earthRadius = 6378137;
+    const originLatRad = originLat * Math.PI / 180;
+
+    return points.map((point) => ({
+        x:
+            earthRadius *
+            (Number(point.longitude) - originLng) *
+            Math.PI / 180 *
+            Math.cos(originLatRad),
+        y:
+            earthRadius *
+            (Number(point.latitude) - originLat) *
+            Math.PI / 180,
+    }));
+}
+
+function localPointToLatLng(point, originLat, originLng) {
+    const earthRadius = 6378137;
+    const originLatRad = originLat * Math.PI / 180;
+
+    return [
+        originLat + (point.y / earthRadius) * 180 / Math.PI,
+        originLng +
+        (point.x / (earthRadius * Math.cos(originLatRad))) *
+        180 / Math.PI,
+    ];
+}
+
+
+function calculatePartyOverlaps(parties = []) {
+    const validParties = parties
+        .map((party) => ({
+            ...party,
+            validPoints: getValidPartyPoints(party.points),
+        }))
+        .filter((party) => {
+            const points = party.validPoints;
+
+            const distinct = new Set(
+                points.map((point) =>
+                    `${Number(point.latitude).toFixed(7)},${Number(point.longitude).toFixed(7)}`
+                )
+            );
+
+            return points.length >= 3 && distinct.size >= 3;
+        });
+
+    const results = [];
+
+    for (let i = 0; i < validParties.length; i++) {
+        for (let j = i + 1; j < validParties.length; j++) {
+            const partyA = validParties[i];
+            const partyB = validParties[j];
+
+            // Use one shared local coordinate origin for both parties.
+            const originLat = Number(partyA.validPoints[0].latitude);
+            const originLng = Number(partyA.validPoints[0].longitude);
+
+            const polygonA = toLocalPolygon(
+                partyA.validPoints,
+                originLat,
+                originLng
+            );
+
+            const polygonB = toLocalPolygon(
+                partyB.validPoints,
+                originLat,
+                originLng
+            );
+
+            try {
+                const comparison = comparePolygons(polygonA, polygonB);
+
+                if (comparison.intersectionArea > 0.01 &&
+                    comparison.intersectionPolygon.length >= 3) {
+                    results.push({
+                        partyAId: partyA.id,
+                        partyAName: partyA.name,
+                        partyAColor: partyA.color || "#2563eb",
+                        partyBId: partyB.id,
+                        partyBName: partyB.name,
+                        partyBColor: partyB.color || "#16a34a",
+                        areaSqMeters: comparison.intersectionArea,
+                        polygon: comparison.intersectionPolygon.map((point) =>
+                            localPointToLatLng(point, originLat, originLng)
+                        ),
+                    });
+                }
+            } catch (error) {
+                console.error(
+                    `Could not compare ${partyA.name} and ${partyB.name}:`,
+                    error
+                );
+            }
+        }
+    }
+
+    return results;
+}
+
+
+
+function validateSurveyParty(party) {
+    const points = party.points || [];
+    const issues = [];
+
+    const validPoints = points.filter((point) => {
+        const latitude = Number(point.latitude);
+        const longitude = Number(point.longitude);
+
+        return (
+            point.latitude !== null &&
+            point.latitude !== "" &&
+            point.longitude !== null &&
+            point.longitude !== "" &&
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude) &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180
+        );
+    });
+
+    if (validPoints.length !== points.length) {
+        issues.push("Some coordinates are missing or invalid.");
+    }
+
+    const distinctCoordinates = new Set(
+        validPoints.map((point) =>
+            `${Number(point.latitude).toFixed(7)},${Number(point.longitude).toFixed(7)}`
+        )
+    );
+
+    if (distinctCoordinates.size < 3) {
+        issues.push(
+            "At least 3 distinct GPS positions are required."
+        );
+    }
+
+    let area = null;
+
+    if (distinctCoordinates.size >= 3 && validPoints.length >= 3) {
+        area = calculatePolygonArea(validPoints);
+
+        if (!Number.isFinite(area) || area <= 0.01) {
+            issues.push(
+                "The boundary has zero or negligible area."
+            );
+        }
+    }
+
+    const ready = issues.length === 0;
+
+    return {
+        ready,
+        status: ready ? "Ready for comparison" : "Needs review",
+        pointCount: points.length,
+        validPointCount: validPoints.length,
+        areaSqMeters: area,
+        issues,
+    };
+}
+
+
+function SurveyMap({ points = [], parties = [] }) {
     const mapElementRef = useRef(null);
     const mapRef = useRef(null);
     const markersRef = useRef(null);
@@ -47,10 +241,14 @@ function SurveyMap({ points = [] }) {
     const [referenceMode, setReferenceMode] = useState(false);
     const [referencePoints, setReferencePoints] = useState([]);
     const [referenceClosed, setReferenceClosed] = useState(false);
+    const [comparisonTriggered, setComparisonTriggered] = useState(false);
 
     const referenceLayerRef = useRef(null);
     const referenceModeRef = useRef(false);
     const comparisonLayerRef = useRef(null);
+    const partyOverlapLayerRef = useRef(null);
+
+    const [partyOverlaps, setPartyOverlaps] = useState([]);
 
     const referenceTestPolygon = [
         { x: 0, y: 0 },
@@ -235,6 +433,7 @@ function SurveyMap({ points = [] }) {
         map.satelliteLayer = satelliteLayer;
 
         markersRef.current = L.layerGroup().addTo(map);
+        partyOverlapLayerRef.current = L.layerGroup().addTo(map);
 
         testOverlapLayerRef.current = L.layerGroup().addTo(map);
 
@@ -261,6 +460,37 @@ function SurveyMap({ points = [] }) {
         };
     }, []);
 
+
+    useEffect(() => {
+        const map = mapRef.current;
+        const layer = partyOverlapLayerRef.current;
+
+        if (!map || !layer) return;
+
+        layer.clearLayers();
+
+        partyOverlaps.forEach((overlap) => {
+            const polygon = L.polygon(overlap.polygon, {
+                color: "#dc2626",
+                weight: 2,
+                fillColor: "#ef4444",
+                fillOpacity: 0.4,
+            });
+
+            polygon
+                .bindTooltip(
+                    `${overlap.partyAName} ↔ ${overlap.partyBName}: ${overlap.areaSqMeters.toFixed(2)} m²`
+                )
+                .bindPopup(`
+                <strong>Boundary Overlap</strong><br>
+                ${overlap.partyAName} and ${overlap.partyBName}<br>
+                Overlapping area: ${overlap.areaSqMeters.toFixed(2)} m²
+            `)
+                .addTo(layer);
+        });
+    }, [partyOverlaps]);
+
+
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
@@ -278,6 +508,7 @@ function SurveyMap({ points = [] }) {
         drawTestOverlap();
     }, [testOverlapMode]);
 
+
     useEffect(() => {
         const map = mapRef.current;
         const markers = markersRef.current;
@@ -291,53 +522,76 @@ function SurveyMap({ points = [] }) {
             boundaryRef.current = null;
         }
 
-        const validPoints = points.filter(
-            (point) =>
-                Number.isFinite(Number(point.latitude)) &&
-                Number.isFinite(Number(point.longitude))
-        );
+        // Use all parties when available; otherwise retain the old behavior.
+        const partiesToDraw =
+            parties.length > 0
+                ? parties
+                : [{
+                    id: 1,
+                    name: "Party 1",
+                    color: "#0f52ba",
+                    points,
+                }];
 
-        const coordinates = validPoints.map((point) => [
-            Number(point.latitude),
-            Number(point.longitude),
-        ]);
+        const allCoordinates = [];
 
-        validPoints.forEach((point, index) => {
-            const marker = L.circleMarker(
-                [Number(point.latitude), Number(point.longitude)],
-                {
-                    radius: 7,
-                    color: "#ffffff",
-                    weight: 2,
-                    fillColor: "#16a34a",
-                    fillOpacity: 1,
-                }
+        partiesToDraw.forEach((party) => {
+            const validPoints = (party.points || []).filter(
+                (point) =>
+                    Number.isFinite(Number(point.latitude)) &&
+                    Number.isFinite(Number(point.longitude))
             );
 
-            marker.bindTooltip(`P${point.id ?? index + 1}`);
-            marker.bindPopup(
-                `P${point.id ?? index + 1}<br>` +
-                `Latitude: ${point.latitude}<br>` +
-                `Longitude: ${point.longitude}`
-            );
+            const coordinates = validPoints.map((point) => [
+                Number(point.latitude),
+                Number(point.longitude),
+            ]);
 
-            marker.addTo(markers);
+            allCoordinates.push(...coordinates);
+
+            validPoints.forEach((point, index) => {
+                L.circleMarker(
+                    [Number(point.latitude), Number(point.longitude)],
+                    {
+                        radius: 7,
+                        color: "#ffffff",
+                        weight: 2,
+                        fillColor: party.color || "#0f52ba",
+                        fillOpacity: 1,
+                    }
+                )
+                    .bindTooltip(
+                        `${party.name || `Party ${party.id}`} — P${point.id ?? index + 1}`
+                    )
+                    .bindPopup(
+                        `<strong>${party.name || `Party ${party.id}`} — P${point.id ?? index + 1}</strong><br>` +
+                        `Latitude: ${point.latitude}<br>` +
+                        `Longitude: ${point.longitude}`
+                    )
+                    .addTo(markers);
+            });
+
+            if (coordinates.length >= 3) {
+                L.polygon(coordinates, {
+                    color: party.color || "#0f52ba",
+                    weight: 3,
+                    fillColor: party.color || "#0f52ba",
+                    fillOpacity: 0.15,
+                })
+                    .bindTooltip(`${party.name || `Party ${party.id}`} boundary`)
+                    .addTo(markers);
+            }
         });
 
-        if (coordinates.length >= 3) {
-            boundaryRef.current = L.polygon(coordinates, {
-                color: "#0f52ba",
-                weight: 3,
-                fillColor: "#0f52ba",
-                fillOpacity: 0.15,
-            }).addTo(map);
+        if (allCoordinates.length > 0) {
+            const bounds = L.latLngBounds(allCoordinates);
+            map.fitBounds(bounds, {
+                padding: [35, 35],
+                maxZoom: 19,
+            });
         }
+    }, [points, parties]);
 
-        if (coordinates.length > 0) {
-            const bounds = L.latLngBounds(coordinates);
-            map.fitBounds(bounds, { padding: [35, 35], maxZoom: 19 });
-        }
-    }, [points]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -489,6 +743,31 @@ function SurveyMap({ points = [] }) {
 
         const hasComparison = comparisonResult !== null;
 
+        const qualityRows = partyQuality.map((party) => {
+            const quality = party.quality;
+
+            const issuesHtml = quality.issues.length
+                ? `<ul>${quality.issues.map((issue) =>
+                    `<li>${escapeHtml(issue)}</li>`
+                ).join("")}</ul>`
+                : "No geometry issues detected.";
+
+            return `
+        <tr>
+            <td>${escapeHtml(party.name)}</td>
+            <td>${quality.pointCount}</td>
+            <td>${quality.validPointCount}</td>
+            <td>${quality.areaSqMeters !== null &&
+                    Number.isFinite(quality.areaSqMeters)
+                    ? formatArea(quality.areaSqMeters)
+                    : "Not available"}</td>
+            <td>${escapeHtml(quality.status)}</td>
+            <td>${issuesHtml}</td>
+        </tr>
+    `;
+        }).join("");
+
+
         const html = `
         <!DOCTYPE html>
         <html>
@@ -560,6 +839,34 @@ function SurveyMap({ points = [] }) {
 
             <p><strong>Generated:</strong>
                 ${escapeHtml(new Date().toLocaleString())}</p>
+
+            
+        <h2>Survey Validity & Quality Check</h2>
+
+        <div class="status">
+            <strong>Overall status:</strong>
+                ${allPartiesReady
+                ? "All party boundaries passed preliminary geometry checks."
+                : "One or more party boundaries need review before comparison."}
+
+            <p>
+                These checks assess coordinate validity and basic polygon geometry.
+                They do not certify legal boundaries or survey-grade GPS accuracy.
+                GPS accuracy data must be available separately for a quality assessment.
+            </p>
+        </div>
+
+        <table>
+            <tr>
+                <th>Party</th>
+                <th>Saved points</th>
+                <th>Valid points</th>
+                <th>Area (m²)</th>
+                <th>Status</th>
+                <th>Findings</th>
+            </tr>
+            ${qualityRows || "<tr><td colspan='6'>No survey parties available.</td></tr>"}
+        </table>
 
             <h2>Comparison Summary</h2>
             <div class="status">
@@ -633,230 +940,300 @@ function SurveyMap({ points = [] }) {
     }
 
 
+    const partyQuality = parties.map((party) => ({
+        ...party,
+        quality: validateSurveyParty(party),
+    }));
+
+    const allPartiesReady =
+        partyQuality.length > 0 &&
+        partyQuality.every((party) => party.quality.ready);
+
 
     return (
-        <div className="survey-map-container">
+        <>
+            <div className="survey-map-container">
+                <div className="survey-map-toolbar">
+                    <div className="survey-map-heading">
+                        <div>
+                            <h2>Survey Map</h2>
+                        </div>
 
-            <div className="survey-map-toolbar">
-                <h2>Survey Map</h2>
+                        <button
+                            type="button"
+                            className="download-report-button"
+                            onClick={downloadSurveyReport}
+                        >
+                            <span aria-hidden="true">↓</span>
+                            Download Survey Report
+                        </button>
+                    </div>
+
+                    <div className="survey-map-switch">
+                        <button
+                            type="button"
+                            className={mapType === "simple" ? "active" : ""}
+                            onClick={() => setMapType("simple")}
+                        >
+                            Normal Map
+                        </button>
+
+                        <button
+                            type="button"
+                            className={mapType === "satellite" ? "active" : ""}
+                            onClick={() => setMapType("satellite")}
+                        >
+                            Satellite
+                        </button>
+
+
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const results = calculatePartyOverlaps(parties);
+                                setPartyOverlaps(results);
+
+                                if (results.length === 0) {
+                                    alert(
+                                        "Comparison completed, but no valid overlapping areas were detected. Each party needs at least 3 distinct GPS points."
+                                    );
+                                } else {
+                                    alert(`Comparison completed. ${results.length} overlap(s) detected.`);
+                                }
+                            }}
+                        >
+                            Compare All Boundaries
+                        </button>
+
+
+                    </div>
+                </div>
+
+
+                <div className="boundary-area">
+                    <h3>Multi-Party Overlap Results</h3>
+
+                    {partyOverlaps.length === 0 ? (
+                        <p>
+                            No overlap detected yet. Each party needs at least
+                            three distinct GPS points forming a valid polygon.
+                        </p>
+                    ) : (
+                        <div className="area-values">
+                            {partyOverlaps.map((overlap, index) => (
+                                <div key={`${overlap.partyAId}-${overlap.partyBId}-${index}`}>
+                                    <strong>
+                                        {overlap.areaSqMeters.toFixed(2)} m²
+                                    </strong>
+                                    <span>
+                                        {overlap.partyAName} ↔ {overlap.partyBName}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+
+                {comparisonResult && (
+                    <div className="boundary-area">
+                        <h3>Boundary Comparison Results</h3>
+
+                        <div className="area-values">
+                            <div>
+                                <strong>{comparisonResult.referenceArea.toFixed(2)}</strong>
+                                <span>Reference area (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>{comparisonResult.roverArea.toFixed(2)}</strong>
+                                <span>Rover area (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>{comparisonResult.intersectionArea.toFixed(2)}</strong>
+                                <span>Overlap area (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>{comparisonResult.referenceOnlyArea.toFixed(2)}</strong>
+                                <span>Reference-only area (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>{comparisonResult.roverOutsideArea.toFixed(2)}</strong>
+                                <span>Rover outside reference (m²)</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {boundaryError && (
+                    <p className="boundary-error">{boundaryError}</p>
+                )}
+
+
+                {testOverlapMode && (
+                    <div className="boundary-area">
+                        <h3>Boundary Comparison Results (Test)</h3>
+
+                        <div className="area-values">
+                            <div>
+                                <strong>
+                                    {testComparison.referenceArea.toFixed(2)}
+                                </strong>
+                                <span>Reference area (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {testComparison.roverArea.toFixed(2)}
+                                </strong>
+                                <span>Rover area (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {testComparison.intersectionArea.toFixed(2)}
+                                </strong>
+                                <span>Intersection (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {testComparison.referenceOnlyArea.toFixed(2)}
+                                </strong>
+                                <span>Reference-only (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    {testComparison.roverOutsideArea.toFixed(2)}
+                                </strong>
+                                <span>Rover outside reference (m²)</span>
+                            </div>
+                        </div>
+
+                        <p className="survey-map-note">
+                            Test data only. These results do not represent an actual land survey.
+                        </p>
+                    </div>
+                )}
+
+
+                {boundaryCreated && areaSqMeters !== null && (
+                    <div className="boundary-area">
+                        <h3>Calculated Land Area</h3>
+
+                        <div className="area-values">
+                            <div>
+                                <strong>{areaSqMeters.toFixed(2)}</strong>
+                                <span>Square metres (m²)</span>
+                            </div>
+
+                            <div>
+                                <strong>{(areaSqMeters / 4046.8564224).toFixed(4)}</strong>
+                                <span>Acres</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="boundary-actions">
                     <button
                         type="button"
-                        onClick={() => {
-                            referenceModeRef.current = true;
-                            setReferenceMode(true);
-                        }}
-                        disabled={referenceMode}
+                        onClick={createBoundary}
+                        disabled={points.length < 3}
                     >
-                        Add Reference Points
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            referenceModeRef.current = false;
-                            setReferenceMode(false);
-
-                            if (referencePoints.length >= 3) {
-                                setReferenceClosed(true);
-                            }
-                        }}
-                        disabled={!referenceMode || referencePoints.length < 3}
-                    >
-                        Finish Reference Boundary
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setReferencePoints((previous) => previous.slice(0, -1));
-                            setReferenceClosed(false);
-                        }}
-                        disabled={referencePoints.length === 0}
-                    >
-                        Undo Last Point
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            referenceModeRef.current = false;
-                            setReferenceMode(false);
-                            setReferencePoints([]);
-                            setReferenceClosed(false);
-                        }}
-                    >
-                        Clear Reference
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={downloadSurveyReport}
-                    >
-                        Download Survey Report
+                        Create Boundary
                     </button>
                 </div>
+
+                <div
+                    ref={mapElementRef}
+                    className="survey-map"
+                    aria-label="Interactive land survey map"
+                />
 
                 <p className="survey-map-note">
-                    {referenceMode
-                        ? "Reference mode ON: click the map to add boundary points."
-                        : "Reference mode OFF: map clicks will not add reference points."}
-                    {" "}Reference points: {referencePoints.length}
+                    {points.length} saved survey point(s). A boundary appears
+                    when at least three valid points are available.
                 </p>
-                <div className="survey-map-switch">
-                    <button
-                        type="button"
-                        className={mapType === "simple" ? "active" : ""}
-                        onClick={() => setMapType("simple")}
-                    >
-                        Normal Map
-                    </button>
-
-                    <button
-                        type="button"
-                        className={mapType === "satellite" ? "active" : ""}
-                        onClick={() => setMapType("satellite")}
-                    >
-                        Satellite
-                    </button>
-
-                    <button
-                        type="button"
-                        className={testOverlapMode ? "active" : ""}
-                        onClick={() => setTestOverlapMode((previous) => !previous)}
-                    >
-                        {testOverlapMode
-                            ? "Exit Test Overlap Mode"
-                            : "Test Overlap Mode"}
-                    </button>
-                </div>
             </div>
 
-            {comparisonResult && (
-                <div className="boundary-area">
-                    <h3>Boundary Comparison Results</h3>
 
-                    <div className="area-values">
-                        <div>
-                            <strong>{comparisonResult.referenceArea.toFixed(2)}</strong>
-                            <span>Reference area (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>{comparisonResult.roverArea.toFixed(2)}</strong>
-                            <span>Rover area (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>{comparisonResult.intersectionArea.toFixed(2)}</strong>
-                            <span>Overlap area (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>{comparisonResult.referenceOnlyArea.toFixed(2)}</strong>
-                            <span>Reference-only area (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>{comparisonResult.roverOutsideArea.toFixed(2)}</strong>
-                            <span>Rover outside reference (m²)</span>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {boundaryError && (
-                <p className="boundary-error">{boundaryError}</p>
-            )}
-
-
-            {testOverlapMode && (
-                <div className="boundary-area">
-                    <h3>Boundary Comparison Results (Test)</h3>
-
-                    <div className="area-values">
-                        <div>
-                            <strong>
-                                {testComparison.referenceArea.toFixed(2)}
-                            </strong>
-                            <span>Reference area (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>
-                                {testComparison.roverArea.toFixed(2)}
-                            </strong>
-                            <span>Rover area (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>
-                                {testComparison.intersectionArea.toFixed(2)}
-                            </strong>
-                            <span>Intersection (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>
-                                {testComparison.referenceOnlyArea.toFixed(2)}
-                            </strong>
-                            <span>Reference-only (m²)</span>
-                        </div>
-
-                        <div>
-                            <strong>
-                                {testComparison.roverOutsideArea.toFixed(2)}
-                            </strong>
-                            <span>Rover outside reference (m²)</span>
-                        </div>
+            <div className="survey-quality-panel">
+                <div className="survey-quality-heading">
+                    <div>
+                        <h3>Survey Quality Check</h3>
+                        <p>
+                            Checks coordinate validity and boundary readiness.
+                            This does not certify survey-grade accuracy.
+                        </p>
                     </div>
 
-                    <p className="survey-map-note">
-                        Test data only. These results do not represent an actual land survey.
-                    </p>
+                    <span
+                        className={
+                            allPartiesReady
+                                ? "survey-quality-status ready"
+                                : "survey-quality-status review"
+                        }
+                    >
+                        {allPartiesReady
+                            ? "Ready for comparison"
+                            : "Review required"}
+                    </span>
                 </div>
-            )}
 
+                <div className="survey-quality-list">
+                    {partyQuality.map((party) => (
+                        <div
+                            className="survey-quality-item"
+                            key={party.id}
+                        >
+                            <div className="survey-quality-party">
+                                <span
+                                    className="survey-party-color"
+                                    style={{
+                                        backgroundColor: party.color,
+                                    }}
+                                />
+                                <strong>{party.name}</strong>
+                                <span
+                                    className={
+                                        party.quality.ready
+                                            ? "survey-quality-status ready"
+                                            : "survey-quality-status review"
+                                    }
+                                >
+                                    {party.quality.status}
+                                </span>
+                            </div>
 
-            {boundaryCreated && areaSqMeters !== null && (
-                <div className="boundary-area">
-                    <h3>Calculated Land Area</h3>
+                            <p>
+                                {party.quality.validPointCount} valid points
+                                {" · "}
+                                {party.quality.areaSqMeters !== null &&
+                                    Number.isFinite(party.quality.areaSqMeters)
+                                    ? `${party.quality.areaSqMeters.toFixed(2)} m²`
+                                    : "Area unavailable"}
+                            </p>
 
-                    <div className="area-values">
-                        <div>
-                            <strong>{areaSqMeters.toFixed(2)}</strong>
-                            <span>Square metres (m²)</span>
+                            {party.quality.issues.length > 0 && (
+                                <ul>
+                                    {party.quality.issues.map((issue, index) => (
+                                        <li key={`${party.id}-${index}`}>
+                                            {issue}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
-
-                        <div>
-                            <strong>{(areaSqMeters / 4046.8564224).toFixed(4)}</strong>
-                            <span>Acres</span>
-                        </div>
-                    </div>
+                    ))}
                 </div>
-            )}
-
-            <div className="boundary-actions">
-                <button
-                    type="button"
-                    onClick={createBoundary}
-                    disabled={points.length < 3}
-                >
-                    Create Boundary
-                </button>
             </div>
-
-            <div
-                ref={mapElementRef}
-                className="survey-map"
-                aria-label="Interactive land survey map"
-            />
-
-            <p className="survey-map-note">
-                {points.length} saved survey point(s). A boundary appears
-                when at least three valid points are available.
-            </p>
-        </div>
+        </>
     );
 }
 
