@@ -13,6 +13,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [gpsLocation, setGpsLocation] = useState(null);
+  const [gpsSource, setGpsSource] = useState("rover");
   const [gpsError, setGpsError] = useState("");
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsPaused, setGpsPaused] = useState(false);
@@ -133,6 +134,7 @@ function App() {
       phoneWatchIdRef.current = null;
     }
 
+    setGpsSource("phone");
     setGpsPaused(false);
     setGpsLoading(true);
     setGpsError("");
@@ -233,9 +235,39 @@ function App() {
     setGpsError("");
   }
 
+  function deleteSurveyPoint(pointId) {
+    const confirmed = window.confirm(
+      `Delete point P${pointId} from ${activeParty.name}?`
+    );
+
+    if (!confirmed) return;
+
+    setSurveyParties((previousParties) =>
+      previousParties.map((party) => {
+        if (party.id !== activePartyId) return party;
+
+        const remainingPoints = party.points
+          .filter((point) => point.id !== pointId)
+          .map((point, index) => ({
+            ...point,
+            id: index + 1,
+          }));
+
+        return {
+          ...party,
+          points: remainingPoints,
+          completed: false,
+        };
+      })
+    );
+  }
 
   useEffect(() => {
-    if (activePage !== "survey" || gpsPaused) {
+    if (
+      activePage !== "survey" ||
+      gpsPaused ||
+      gpsSource === "phone"
+    ) {
       return;
     }
 
@@ -251,7 +283,7 @@ function App() {
     return () => {
       clearInterval(gpsInterval);
     };
-  }, [activePage, gpsPaused]);
+  }, [activePage, gpsPaused, gpsSource]);
 
 
   useEffect(() => {
@@ -1382,6 +1414,13 @@ function App() {
                       <strong>P{point.id}</strong>
                       <span>Latitude: {point.latitude}</span>
                       <span>Longitude: {point.longitude}</span>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => deleteSurveyPoint(point.id)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   ))}
                 </div>

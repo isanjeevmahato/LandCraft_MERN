@@ -1190,6 +1190,10 @@
   overflow-wrap: anywhere;
 }
 
+.saved-point button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 
 
 /* Survey Map */
