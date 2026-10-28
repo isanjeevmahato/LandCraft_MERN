@@ -116,7 +116,43 @@ function App() {
       setGpsLoading(false);
     }
   }
-  
+
+
+  const startPhoneGPS = () => {
+    if (!navigator.geolocation) {
+      setGpsError("GPS is not supported by this browser.");
+      return;
+    }
+
+    setGpsPaused(false);
+    setGpsLoading(true);
+    setGpsError("");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGpsLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          satellites: "Phone GPS",
+        });
+
+        setGpsLoading(false);
+      },
+      (error) => {
+        setGpsError(
+          error.message || "Unable to access phone GPS."
+        );
+        setGpsLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 20000,
+      }
+    );
+  };
+
 
   function saveSurveyPoint() {
     if (!gpsLocation) {
@@ -1152,6 +1188,15 @@ function App() {
                   disabled={gpsLoading}
                 >
                   {gpsLoading ? "Fetching..." : "Refresh GPS"}
+                </button>
+
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={startPhoneGPS}
+                  disabled={gpsLoading}
+                >
+                  Use Phone GPS
                 </button>
 
               </div>
