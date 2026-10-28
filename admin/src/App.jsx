@@ -1390,6 +1390,7 @@ function App() {
               <SurveyMap
                 points={activeParty.points}
                 parties={surveyParties}
+                gpsLocation={gpsLocation}
               />
 
             </section>

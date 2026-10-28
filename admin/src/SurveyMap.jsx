@@ -225,7 +225,7 @@ function validateSurveyParty(party) {
 }
 
 
-function SurveyMap({ points = [], parties = [] }) {
+function SurveyMap({ points = [], parties = [], gpsLocation }) {
     const mapElementRef = useRef(null);
     const mapRef = useRef(null);
     const markersRef = useRef(null);
@@ -406,8 +406,8 @@ function SurveyMap({ points = [], parties = [] }) {
         if (mapRef.current || !mapElementRef.current) return;
 
         const map = L.map(mapElementRef.current).setView(
-            [22.7144, 86.2294],
-            18
+            [23.8, 85.0],
+            7
         );
 
         const normalLayer = L.tileLayer(
@@ -708,7 +708,23 @@ function SurveyMap({ points = [], parties = [] }) {
         }
     }, [referencePoints, referenceClosed, points]);
 
+    useEffect(() => {
+        const map = mapRef.current;
 
+        if (!map || !gpsLocation) return;
+
+        const latitude = Number(gpsLocation.latitude);
+        const longitude = Number(gpsLocation.longitude);
+
+        if (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude)
+        ) {
+            return;
+        }
+
+        map.setView([latitude, longitude], 18);
+    }, [gpsLocation]);
 
     function downloadSurveyReport() {
         const escapeHtml = (value) =>
