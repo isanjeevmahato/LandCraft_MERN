@@ -1,5 +1,5 @@
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import SurveyMap from "./SurveyMap";
 
@@ -118,17 +118,26 @@ function App() {
   }
 
 
+
+  const phoneWatchIdRef = useRef(null);
+
   const startPhoneGPS = () => {
     if (!navigator.geolocation) {
-      setGpsError("GPS is not supported by this browser.");
+      setGpsError("Phone GPS is not supported by this browser.");
       return;
+    }
+
+    // Avoid starting duplicate GPS watches.
+    if (phoneWatchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(phoneWatchIdRef.current);
+      phoneWatchIdRef.current = null;
     }
 
     setGpsPaused(false);
     setGpsLoading(true);
     setGpsError("");
 
-    navigator.geolocation.getCurrentPosition(
+    phoneWatchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         setGpsLocation({
           latitude: position.coords.latitude,
@@ -138,12 +147,13 @@ function App() {
         });
 
         setGpsLoading(false);
+        setGpsError("");
       },
       (error) => {
+        setGpsLoading(false);
         setGpsError(
           error.message || "Unable to access phone GPS."
         );
-        setGpsLoading(false);
       },
       {
         enableHighAccuracy: true,
@@ -152,6 +162,15 @@ function App() {
       }
     );
   };
+
+  useEffect(() => {
+    return () => {
+      if (phoneWatchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(phoneWatchIdRef.current);
+      }
+    };
+  }, []);
+
 
 
   function saveSurveyPoint() {
